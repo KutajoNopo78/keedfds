@@ -78,13 +78,13 @@
       <section class="sc s2" data-sc="2" aria-labelledby="s2-h">
         <div class="pin s2-h" data-p="s2h">
           <h2 id="s2-h" class="head"><span class="m"><span class="mi">Четыре пути к&nbsp;данным.</span></span></h2>
-          <p class="lead s2-note">Сначала&nbsp;— то, что уже стоит в&nbsp;машине.</p>
+          <p class="lead s2-note">Сначала&nbsp;— то, что уже есть.</p>
         </div>
         <ol class="s2-list">
           <li class="pin s2-src" data-p="src0"><b>трекер</b><span class="mono">EGTS · Wialon IPS · Galileosky</span></li>
           <li class="pin s2-src" data-p="src1"><b>платформа</b><span class="mono">АвтоГРАФ · Wialon · Traccar · ISO&nbsp;15143-3</span></li>
-          <li class="pin s2-src" data-p="src2"><b>телефон<span class="s2-long"> в&nbsp;кабине</span></b><span class="mono">код из&nbsp;6&nbsp;цифр · пишет и&nbsp;без сети</span></li>
-          <li class="pin s2-src" data-p="src3"><b>счётчик</b><span class="mono">фото показаний</span></li>
+          <li class="pin s2-src" data-p="src2"><b>телефон<span class="s2-long"> в&nbsp;кабине</span></b><span class="mono">код из&nbsp;6&nbsp;цифр · копит данные без сети</span></li>
+          <li class="pin s2-src" data-p="src3"><b>счётчик</b><span class="mono">показание с&nbsp;панели и&nbsp;фото</span></li>
         </ol>
         <p class="pin mono s2-cab" data-p="s2cab" aria-hidden="true">кабинет</p>
         <p class="pin mono s2-off" data-p="s2off" aria-hidden="true">нет сети</p>
@@ -93,8 +93,10 @@
       <!-- 04 · the readings -->
       <section class="sc s3" data-sc="3" aria-labelledby="s3-h">
         <h2 id="s3-h" class="sr-only">Моточасы, масло, местоположение и&nbsp;пробег&nbsp;— в&nbsp;одном кабинете</h2>
-        <p class="pin s3-word" data-p="s3word" aria-hidden="true"><span class="m s3-stack"><span class="mi" data-w="a">моточасы</span><span class="mi" data-w="b">моточасы</span></span></p>
-        <p class="pin lead s3-data" data-p="s3data" aria-hidden="true">из&nbsp;ЭБУ, трекера или по&nbsp;фото счётчика</p>
+        <div class="pin s3-g" data-p="s3word" aria-hidden="true">
+          <p class="s3-word"><span class="m s3-stack"><span class="mi" data-w="a">моточасы</span><span class="mi" data-w="b">моточасы</span></span></p>
+          <p class="lead s3-data">от&nbsp;трекера или с&nbsp;панели по&nbsp;фото счётчика</p>
+        </div>
       </section>
 
       <!-- 05 · any machine: the facet shell -->
@@ -110,12 +112,12 @@
 
       <!-- 06 · no network -->
       <section class="sc s5" data-sc="5" aria-labelledby="s5-h">
-        <h2 id="s5-h" class="sr-only">Без сети&nbsp;— без потерь: трекер и&nbsp;телефон копят точки в&nbsp;памяти и&nbsp;досылают их, как только появится сеть</h2>
+        <h2 id="s5-h" class="sr-only">Нет сети&nbsp;— данные ждут: трекер и&nbsp;телефон копят точки в&nbsp;памяти и&nbsp;досылают их, когда связь вернётся, пока есть место в&nbsp;памяти устройства</h2>
         <p class="pin mono s5-tag" data-p="s5tag" aria-hidden="true"><i></i><span data-s5-state>нет сети · в&nbsp;памяти</span> <b data-s5-n>0</b></p>
         <div class="pin s5-big" data-p="s5big" aria-hidden="true">
-          <p class="head"><span class="m"><span class="mi">Без сети&nbsp;—<br />без потерь.</span></span></p>
-          <p class="lead s5-sub">Трекер и&nbsp;телефон копят точки в&nbsp;памяти и&nbsp;досылают у&nbsp;первой вышки. Смена в&nbsp;лесу доходит целиком.</p>
-          <p class="mono s5-sub">пока хватает памяти устройства</p>
+          <p class="head"><span class="m"><span class="mi">Нет сети&nbsp;—<br />данные ждут.</span></span></p>
+          <p class="lead s5-sub">Трекер и&nbsp;телефон копят точки в&nbsp;памяти и&nbsp;досылают их, когда связь вернётся.</p>
+          <p class="mono s5-sub">схема · пока есть место в&nbsp;памяти устройства</p>
         </div>
       </section>
 
@@ -146,11 +148,11 @@
               <span class="dl__go" aria-hidden="true">→</span>
             </a>
           </div>
-          <p class="s7-note" data-rise>Сборки 0.3.3 пока называются ITles, Android-сборка тестовая. <button type="button" data-open-details="downloads">Как установить</button></p>
+          <p class="s7-note" data-rise>Сборки 0.3.3 пока называются ITles, Android-сборка тестовая; на&nbsp;устройствах их ещё не&nbsp;проверяли. <button type="button" data-open-details="downloads">Как установить</button></p>
           <ol class="s7-steps" data-rise>
             <li><span class="n">01</span><h3>Откройте кабинет</h3><p>Вход по&nbsp;логину, новичку&nbsp;— по&nbsp;коду приглашения.</p></li>
             <li><span class="n">02</span><h3>Подключите то, что есть</h3><p>Трекер, платформу мониторинга или телефон в&nbsp;кабине.</p></li>
-            <li><span class="n">03</span><h3>Добавьте показания</h3><p>Моточасы или пробег&nbsp;— с&nbsp;фото счётчика.</p></li>
+            <li><span class="n">03</span><h3>Добавьте показания</h3><p>Моточасы или пробег с&nbsp;панели, фото&nbsp;— к&nbsp;ним.</p></li>
           </ol>
           <p class="s7-links" data-rise><a class="s7-cab" href="./app/">Открыть кабинет в&nbsp;браузере&nbsp;→</a><a href="./app/#/cab">Телефон в&nbsp;кабине</a></p>
         </div>

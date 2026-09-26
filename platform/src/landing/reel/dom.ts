@@ -10,11 +10,11 @@ import type { Navigator, Pull } from './nav';
 const H = HOLDS;
 const IT = ['моточасы', 'масло', 'местоположение', 'пробег', 'в\u00a0одном кабинете'];
 const DATA = [
-  'из\u00a0ЭБУ, трекера или по\u00a0фото счётчика',
-  'уровень, давление и\u00a0температура',
+  'от\u00a0трекера или с\u00a0панели по\u00a0фото счётчика',
+  'уровень, давление и\u00a0температура\u00a0— если машина их передаёт',
   'по\u00a0трекеру или телефону в\u00a0кабине',
-  'без накрутки на\u00a0стоянке',
-  'владелец, дистрибьютор и\u00a0FUCHS видят каждый своё',
+  'отсекаем дрожание сигнала на\u00a0стоянке',
+  'владелец видит свои машины, дистрибьютор\u00a0— клиентов, FUCHS\u00a0— всю сеть',
 ];
 /** Film windows in which each scene's DOM layer is on screen. */
 const WIN: Array<[number, number]> = [
@@ -57,6 +57,7 @@ export class Overlay {
   private lit = -1;
   private peekK = -1;
   private spin = 0;
+  private tagW = 0;
   onChapter: (k: number) => void = () => {};
   onCue: () => void = () => {};
 
@@ -106,7 +107,7 @@ export class Overlay {
     this.s2note = document.querySelector<HTMLElement>('.s2-note');
     this.s3a = this.pin.get('s3word')?.querySelector('[data-w="a"]') ?? null;
     this.s3b = this.pin.get('s3word')?.querySelector('[data-w="b"]') ?? null;
-    this.s3data = this.pin.get('s3data') ?? null;
+    this.s3data = this.pin.get('s3word')?.querySelector<HTMLElement>('.s3-data') ?? null;
     this.s4list = document.querySelector<HTMLElement>('[data-s4-list]');
     this.s4w = qa<HTMLElement>('.s4-w');
     this.s5state = this.pin.get('s5tag')?.querySelector('[data-s5-state]') ?? null;
@@ -127,11 +128,13 @@ export class Overlay {
       (el as HTMLElement).style.opacity = v;
     }
   }
-  private txt(el: Element, v: string) {
+  private txt(el: Element, v: string): boolean {
     if (this.text.get(el) !== v) {
       this.text.set(el, v);
       el.textContent = v;
+      return true;
     }
+    return false;
   }
   /** Pins an element at (x, y) with an alignment offset in % of its own box. */
   private at(key: string, x: number, y: number, ax = 0, ay = 0, a = 1) {
@@ -243,7 +246,8 @@ export class Overlay {
     const dIn = arrive(range(dt, 0.35, 1), 0.1);
     if (this.s3data) {
       this.txt(this.s3data, DATA[j]);
-      this.at('s3data', x, y + R * (L.portrait ? 2.2 : 2.25) + (L.portrait ? 50 : 70) + (1 - dIn) * 10, -50, 0, vis * Math.min(1, j === 0 && OUT.reading === 0 ? range(T, H[2] + 1.1, H[2] + 1.4) : dIn));
+      this.tf(this.s3data, `translate3d(0,${((1 - dIn) * 10).toFixed(2)}px,0)`);
+      this.op(this.s3data, Math.min(1, j === 0 && OUT.reading === 0 ? range(T, H[2] + 1.1, H[2] + 1.4) : dIn));
     }
     const a = this.s3a, b = this.s3b;
     if (a && b) {
@@ -281,16 +285,23 @@ export class Overlay {
     const sub = this.pin.get('s5big')?.querySelectorAll<HTMLElement>('.s5-sub');
     if (sub) for (let i = 0; i < sub.length; i++) this.op(sub[i], range(T, H[4] + 0.75 + i * 0.35, H[4] + 1.05 + i * 0.35));
     const tag = this.pin.get('s5tag');
+    let tw = this.tagW;
     if (tag && this.s5state && this.s5n) {
       const n = OUT.stored, sent = OUT.sent;
       const done = OUT.inCover && n === 0 && sent > 0;
-      this.txt(this.s5state, !OUT.inCover ? 'нет сети · в\u00a0памяти' : n > 0 ? 'сеть есть · досылаем' : 'в\u00a0кабинете');
-      this.txt(this.s5n, done ? `${sent} из\u00a0${sent}` : String(n));
+      const a = this.txt(this.s5state, !OUT.inCover ? 'нет сети · точки в\u00a0памяти' : n > 0 ? 'сеть есть · досылаем' : 'точки в\u00a0кабинете');
+      const b = this.txt(this.s5n, done ? `${sent} из\u00a0${sent}` : String(n));
       tag.classList.toggle('is-off', !OUT.inCover);
       tag.classList.toggle('is-done', done);
+      // measured only when the words change, so the frame loop never forces layout
+      if (a || b || tw <= 0) tw = this.tagW = tag.offsetWidth;
     }
-    const flip = OUT.tagX > L.W - (P ? 170 : 240);
-    this.at('s5tag', OUT.tagX + (flip ? -14 : 14), OUT.tagY - 14, flip ? -100 : 0, -100, OUT.tagOn * range(T, H[4] + 0.95, H[4] + 1.15));
+    // beside the beacon, on whichever side fits, never past the screen edge
+    const edge = 12;
+    let tx = OUT.tagX + 14;
+    if (tx + tw > L.W - edge) tx = OUT.tagX - 14 - tw;
+    tx = Math.max(edge, Math.min(L.W - edge - tw, tx));
+    this.at('s5tag', tx, OUT.tagY - 14, 0, -100, OUT.tagOn * range(T, H[4] + 0.95, H[4] + 1.15));
   }
 
   private scene7(T: number) {

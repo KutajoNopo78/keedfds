@@ -46,7 +46,8 @@ export const setType = (t: Type) => (TYPE = t);
 let coverU = 0.62;
 export const setCoverU = (u: number) => (coverU = u);
 
-export const L = { W: 1, H: 1, cx: 0, cy: 0, U: 1, portrait: false, cover: 1 };
+/** short: a landscape phone — little height, so every scene keeps its words clear of the bottom HUD. */
+export const L = { W: 1, H: 1, cx: 0, cy: 0, U: 1, portrait: false, short: false, cover: 1 };
 export function layout(W: number, Hh: number) {
   L.W = W;
   L.H = Hh;
@@ -54,6 +55,7 @@ export function layout(W: number, Hh: number) {
   L.cy = Hh / 2;
   L.U = Math.min(W, Hh);
   L.portrait = W / Hh < 0.8;
+  L.short = !L.portrait && Hh < 560;
   L.cover = Math.hypot(W, Hh) / 2 + 60;
 }
 
@@ -96,7 +98,7 @@ const CUTS: Cut[] = [
   { bg: SIN, word: 'МАСЛО.', col: BONE, dot: SURIK },
   { bg: KOVSH, word: 'ЛЮБАЯ', col: INK },
   { bg: KOVSH, word: 'ТЕХНИКА', col: INK, pattern: true },
-  { bg: INK, word: 'НА СВЯЗИ.', col: BONE, dot: SURIK, bars: true },
+  { bg: INK, word: 'НА\u00a0СВЯЗИ.', col: BONE, dot: SURIK, bars: true },
 ];
 export const WORDS = CUTS.map((c) => ({ word: c.word, cond: !!c.cond }));
 const cutIndex = (T: number) => Math.max(0, Math.min(CUTS.length - 1, Math.floor((T - H[5]) / CUT + 1e-6)));
@@ -150,7 +152,7 @@ function wmGeom() {
   const w = L.portrait ? L.W * 0.86 : Math.min(L.W * 0.74, L.H * 2.2);
   WM.u = w / WORDMARK.width;
   WM.x0 = L.cx - w / 2;
-  WM.base = L.cy + 50 * WM.u - L.H * (L.portrait ? 0.07 : 0.045);
+  WM.base = L.cy + 50 * WM.u - L.H * (L.portrait ? 0.07 : L.short ? 0.13 : 0.045);
   OUT.wmX0 = WM.x0;
   OUT.wmX1 = WM.x0 + w;
   OUT.wmBase = WM.base;
@@ -239,10 +241,12 @@ function s2Geom() {
     S2.cw = Math.min(W * 0.34, Hh * 0.62);
     S2.ch = S2.cw * 0.7;
     S2.cx = W * 0.72;
-    S2.cy = Hh * 0.6;
+    S2.cy = Hh * (L.short ? 0.62 : 0.6);
+    // a landscape phone: the rows start under the headline block and end above the bottom HUD
+    const r0 = L.short ? 0.47 : 0.41, dr = L.short ? 0.105 : 0.125;
     for (let i = 0; i < 4; i++) {
       S2.sx[i] = W * 0.075;
-      S2.sy[i] = Hh * (0.41 + 0.125 * i);
+      S2.sy[i] = Hh * (r0 + dr * i);
       S2.px[i] = W * 0.36;
       S2.py[i] = S2.sy[i];
       S2.ex[i] = S2.cx - S2.cw / 2;
@@ -469,9 +473,17 @@ function s2(F: Frame, T: number, now: number) {
 // ── 3 · ПОКАЗАНИЯ: one shape becomes each reading in turn, slowly, each held long enough to read ─────
 const S3 = { x: 0, y: 0, R: 0 };
 function s3Geom() {
-  S3.R = L.portrait ? Math.min(L.W * 0.2, L.H * 0.11) : L.U * 0.15;
   S3.x = L.cx;
-  S3.y = L.cy - (L.portrait ? 0.07 : 0.04) * L.H;
+  if (L.portrait) {
+    S3.R = Math.min(L.W * 0.2, L.H * 0.11);
+    S3.y = L.cy - 0.07 * L.H;
+  } else {
+    // the dial, its bezel and the words under it share the band between the top and bottom HUD
+    const top = 64, bottom = L.H - (L.short ? 96 : 124);
+    const words = L.short ? 92 : Math.min(190, L.H * 0.2);
+    S3.R = Math.max(18, Math.min(L.U * 0.15, (bottom - top - words) / 4.6));
+    S3.y = Math.min(L.cy - 0.04 * L.H, bottom - words - 2.2 * S3.R);
+  }
   OUT.s3x = S3.x;
   OUT.s3y = S3.y;
   OUT.s3R = S3.R;
@@ -740,7 +752,7 @@ function s6(F: Frame, T: number, now: number) {
   // a monospace word space is a whole cell wide: close it up by half, as a typesetter would
   const cell = w.adv / w.text.length, cutSp = cell * 0.5;
   let spaces = 0;
-  for (let i = 0; i < w.text.length; i++) if (w.text[i] === ' ') spaces++;
+  for (let i = 0; i < w.text.length; i++) if (w.text[i] === ' ' || w.text[i] === '\u00a0') spaces++;
   const adv = w.adv - spaces * cutSp;
   let k = (L.W * (L.portrait ? 0.9 : c.bars ? 0.7 : 0.84)) / adv, sy = 1;
   if (c.cond) sy = Math.min(1.7, (L.H * (L.portrait ? 0.24 : 0.4)) / (w.cap * k));
@@ -762,7 +774,7 @@ function s6(F: Frame, T: number, now: number) {
   let shift = 0;
   for (let i = 0; i < n; i++) {
     const g = w.glyphs[i];
-    if (w.text[i] === ' ') shift += cutSp;
+    if (w.text[i] === ' ' || w.text[i] === '\u00a0') shift += cutSp;
     if (!g) continue;
     const e = arrive(range(lt, stag(i, n, 0.012), stag(i, n, 0.012) + 0.24), 0.12);
     const lift = (1 - e) * cap * 0.16;

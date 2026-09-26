@@ -59,7 +59,7 @@ export const SCENES: readonly Scene[] = [
   },
   { title: 'Любая техника', hold: H4, read: 1.7 },
   { title: 'Без связи', hold: H5, read: 2.0, dwell: [[H4 + 0.9, H4 + 1.7]] },
-  { title: 'На связи', hold: H6, read: 1.0 },
+  { title: 'На\u00a0связи', hold: H6, read: 1.0 },
   { title: 'Старт', hold: H7, read: 0 },
 ];
 export const HOLDS = SCENES.map((s) => s.hold);

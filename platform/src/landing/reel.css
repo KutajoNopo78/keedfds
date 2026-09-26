@@ -22,7 +22,8 @@
   --mono: var(--font-mono);
   --hud: var(--paper);
   --inset: clamp(14px, 2.2vw, 30px);
-  --bar: calc(var(--inset) + env(safe-area-inset-bottom, 0px));
+  /* the progress rail sits high enough that its 44 px hit area stays on screen */
+  --bar: calc(max(var(--inset), 22px) + env(safe-area-inset-bottom, 0px));
   /* the film's curve for CSS: quick out, a small overshoot, settle */
   --ease-film: cubic-bezier(0.2, 1.3, 0.35, 1);
   color-scheme: dark;
@@ -439,6 +440,11 @@ html.reel body {
   grid-area: 1 / 1;
   text-align: center;
 }
+.s3-g {
+  display: grid;
+  justify-items: center;
+  gap: clamp(8px, 1.4vh, 18px);
+}
 .s3-data {
   width: max-content;
   max-width: min(34ch, 86vw);
@@ -674,6 +680,9 @@ html.reel body {
   color: rgb(10 9 7 / 0.62);
 }
 .s7-note button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   margin-left: 6px;
   font-weight: 650;
   color: var(--ink);
@@ -721,6 +730,9 @@ html.reel body {
   font-size: 15px;
 }
 .s7-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-weight: 600;
   text-underline-offset: 4px;
 }
@@ -755,7 +767,7 @@ html.reel body {
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  margin: -10px 0 0 -4px;
+  margin: -8px 0 0 -4px;
   padding: 0 4px;
   text-decoration: none;
 }
@@ -777,7 +789,7 @@ html.reel body {
   right: calc(var(--inset) + env(safe-area-inset-right, 0px));
   display: flex;
   gap: 4px;
-  margin-top: -10px;
+  margin-top: -8px;
 }
 .hud__tr a,
 .hud__tr button {
@@ -822,7 +834,8 @@ html.reel body {
 .cue {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--bar) + 4px);
+  bottom: calc(var(--bar) + 10px);
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 60px;
@@ -884,6 +897,7 @@ html.reel-end .cue {
   right: calc(var(--inset) + env(safe-area-inset-right, 0px));
   bottom: var(--bar);
   height: 2px;
+  z-index: 1;
   background: color-mix(in srgb, currentColor 22%, transparent);
 }
 .hud__fill {
@@ -895,7 +909,7 @@ html.reel-end .cue {
 }
 .hud__bar ol {
   position: absolute;
-  inset: -12px 0;
+  inset: -21px 0;
   display: flex;
 }
 .hud__bar li {
@@ -1288,7 +1302,7 @@ html.reel-end .cue {
     left: 8vw;
     right: 8vw;
     top: auto;
-    bottom: calc(var(--bar) + 92px);
+    bottom: calc(var(--bar) + 104px);
     grid-template-columns: 1fr 1fr;
     gap: 14px 18px;
   }
@@ -1388,11 +1402,12 @@ html.reel-end .cue {
   }
 }
 @media (max-aspect-ratio: 4/5) and (max-height: 700px) {
-  .s7-steps p {
+  /* a small phone keeps the next step — the downloads — and leaves the steps to the text version */
+  .s7-steps {
     display: none;
   }
   .s4-list {
-    bottom: calc(var(--bar) + 78px);
+    bottom: calc(var(--bar) + 90px);
   }
 }
 @media (min-aspect-ratio: 4/5) and (max-height: 680px) {
@@ -1413,6 +1428,66 @@ html.reel-end .cue {
   }
   .dl {
     min-height: 64px;
+  }
+}
+/* landscape phones: the film keeps every word above the bottom HUD */
+@media (min-aspect-ratio: 4/5) and (max-height: 560px) {
+  .head {
+    font-size: clamp(1.6rem, 3.9vw, 2.6rem);
+  }
+  .lead {
+    font-size: 0.95rem;
+  }
+  .s1-l,
+  .s1-r {
+    display: none;
+  }
+  .s1-u .mono {
+    margin-top: 6px;
+  }
+  .s2-src .mono {
+    display: none;
+  }
+  .s2-src b {
+    font-size: 1rem;
+  }
+  .s3-word {
+    font-size: clamp(1.5rem, 3.6vw, 2.4rem);
+  }
+  .s3-data {
+    font-size: 0.9rem;
+  }
+  .s4-h {
+    font-size: clamp(1.8rem, 4.2vw, 2.8rem);
+  }
+  .s4-list {
+    top: calc(13vh + 1.92 * clamp(1.8rem, 4.2vw, 2.8rem) + 14px);
+    gap: 4px;
+  }
+  .s4-list li {
+    font-size: clamp(1rem, 2.2vw, 1.4rem);
+  }
+  .s5-big .mono {
+    margin-top: 6px;
+  }
+  .s7-ui {
+    top: calc(var(--lock-bottom, 20vh) + 30px);
+    gap: 8px;
+  }
+  .s7-steps,
+  .s7-note {
+    display: none;
+  }
+  .dl {
+    min-height: 58px;
+    padding: 10px 10px 10px 14px;
+  }
+  .dl small {
+    white-space: normal;
+  }
+  .dl__go {
+    width: 40px;
+    height: 40px;
   }
 }
 

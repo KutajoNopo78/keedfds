@@ -2,6 +2,7 @@ import './reel.css';
 import { Atlas, type Glyph, type Word } from './reel/atlas';
 import { Overlay } from './reel/dom';
 import { Frame, Renderer, type Build } from './reel/gl/renderer';
+import { Renderer2D, type FilmRenderer } from './reel/gl/renderer2d';
 import { Navigator, Pull, bindInput } from './reel/nav';
 import { WORDS, draw, layout, setCoverU, setQuality, setType } from './reel/scenes';
 import { HOLDS } from './reel/time';
@@ -61,6 +62,30 @@ function toDocument() {
   root.classList.remove('reel', 'reel--still', 'reel--live', 'reel--gl');
 }
 
+/**
+ * WebGL2 only on a real GPU. Software rasterisers (SwiftShader, llvmpipe), blocked GPUs and browsers with
+ * hardware acceleration off get the Canvas 2D renderer: the same film, drawn by the CPU's 2D path.
+ */
+function gpuReady(): boolean {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2', { failIfMajorPerformanceCaveat: true });
+    if (!gl) return false;
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '');
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return !/swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+  } catch {
+    return false;
+  }
+}
+
+/** A canvas that already has a WebGL context cannot give a 2D one: replace it with a fresh twin. */
+function freshCanvas(old: HTMLCanvasElement) {
+  const c = old.cloneNode(false) as HTMLCanvasElement;
+  old.replaceWith(c);
+  return c;
+}
+
 if (root.classList.contains('reel')) start();
 
 function start() {
@@ -68,20 +93,43 @@ function start() {
   root.classList.add('reel--live');
   const reduced = root.classList.contains('reel--still');
   const debug = new URLSearchParams(location.search).has('debug');
-  const canvas = $<HTMLCanvasElement>('canvas.stage')!;
-  let R: Renderer;
+  // ?gl=2d or ?gl=webgl forces a renderer, for checks
+  const force = new URLSearchParams(location.search).get('gl');
+  let canvas = $<HTMLCanvasElement>('canvas.stage')!;
+  let R: FilmRenderer;
+  let flat = force === '2d' || (force !== 'webgl' && !gpuReady());
   try {
-    R = new Renderer(canvas);
+    R = flat ? new Renderer2D(canvas) : new Renderer(canvas);
   } catch (e) {
-    console.warn('reel disabled', e);
-    return toDocument();
+    console.warn('WebGL2 failed, drawing in 2D', e);
+    try {
+      canvas = freshCanvas(canvas);
+      R = new Renderer2D(canvas);
+      flat = true;
+    } catch (e2) {
+      console.warn('reel disabled', e2);
+      return toDocument();
+    }
   }
+  root.classList.toggle('reel--2d', flat);
+  // a lost or broken GPU context hands the film to the 2D renderer instead of ending it
+  const toFlat = (why: unknown) => {
+    if (flat) return toDocument();
+    console.warn('WebGL2 lost, drawing in 2D', why);
+    flat = true;
+    root.classList.add('reel--2d');
+    canvas = freshCanvas(canvas);
+    R = new Renderer2D(canvas);
+    if (atlasUp) R.setAtlas(atlas);
+    if (buildUp && build) R.setBuild(build);
+    warmed = false;
+  };
   canvas.addEventListener('webglcontextlost', (e) => {
     e.preventDefault();
-    toDocument();
+    toFlat('context lost');
   });
 
-  const low = innerWidth / innerHeight < 0.8 || (navigator.hardwareConcurrency ?? 8) <= 4;
+  const low = flat || innerWidth / innerHeight < 0.8 || (navigator.hardwareConcurrency ?? 8) <= 4;
   let build: Build | null = null;
   const worker = new Worker(new URL('./reel/worker.ts', import.meta.url), { type: 'module' });
   worker.onmessage = (e: MessageEvent<Build>) => {
@@ -154,14 +202,9 @@ function start() {
     }
   };
 
-  const go = (dir: 1 | -1) => {
-    if (!nav) return;
-    const n = nav;
-    const vt = (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
-    // reduced motion: calm cross-fades between the scenes' resting frames
-    if (reduced && vt) vt.call(document, () => (n.step(dir), render(n.T, 0, 0)));
-    else n.step(dir);
-  };
+  const go = (dir: 1 | -1) => nav?.step(dir);
+  const vt = (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
+  let shownK = 0;
 
   const loop = (nowMs: number) => {
     requestAnimationFrame(loop);
@@ -173,8 +216,8 @@ function start() {
       try {
         R.poll();
       } catch (e) {
-        console.warn(e);
-        return toDocument();
+        toFlat(e);
+        return;
       }
       if (R.linked) mark('shadersLinked');
       if (fontsIn) mark('fontsIn');
@@ -241,8 +284,7 @@ function start() {
           nav!.goTo(1);
         });
         // the intro flows straight into the first scene
-        if (reduced) go(1);
-        else nav.step(1);
+        nav.step(1);
       }
       return;
     }
@@ -254,6 +296,12 @@ function start() {
       T = n.T;
     }
     pull.update(dt, manual ? null : n, reduced);
+    // reduced motion: every scene change — including a queued one taken after reading — is a calm cross-fade
+    if (reduced && vt && !manual && n.K !== shownK) {
+      shownK = n.K;
+      vt.call(document, () => render(n.T, 0, 0));
+      return;
+    }
     render(T, manual ? manual.now : now, dt);
     if (debug) {
       cpu.push(performance.now() - nowMs);
@@ -305,6 +353,7 @@ function start() {
         resetFrames: () => ((frames.length = 0), (cpu.length = 0), (longtasks.length = 0)),
         step: (d: 1 | -1) => go(d),
         renderer: R,
+        flat: () => flat,
         slow: () => slow,
       },
     });
