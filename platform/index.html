@@ -23,15 +23,14 @@
     <link rel="manifest" href="./manifest.webmanifest?v=4" />
     <link rel="preload" href="./src/brand/fonts/onest-var.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="./src/brand/fonts/martian-mono-var.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./src/brand/fonts/unbounded-800.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./src/brand/fonts/noto-serif-display-italic.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="theme-color" content="#0a0907" />
     <meta name="color-scheme" content="dark" />
     <script>
       (function () {
         var d = document.documentElement;
+        // the film draws with WebGL2 where it works and falls back to Canvas 2D, so only a 2D canvas is required
         try {
-          if (!document.createElement('canvas').getContext('webgl2')) return;
+          if (!document.createElement('canvas').getContext('2d')) return;
         } catch (e) {
           return;
         }
@@ -40,7 +39,7 @@
         // the document layout comes back if the film script never starts
         setTimeout(function () {
           if (!d.classList.contains('reel--live')) d.classList.remove('reel', 'reel--still');
-        }, 8000);
+        }, 10000);
       })();
     </script>
   </head>
@@ -49,6 +48,8 @@
 
     <main id="reel" class="reel-root" aria-label="Отсчёт&nbsp;— фильм о&nbsp;продукте. Стрелки, прокрутка или свайп переключают сцены">
       <h1 class="sr-only">Масло, моточасы и&nbsp;местоположение любой спецтехники&nbsp;— из&nbsp;того, что уже стоит в&nbsp;машине</h1>
+      <div class="peek" aria-hidden="true"></div>
+      <div class="lift">
       <canvas class="stage" aria-hidden="true"></canvas>
 
       <!-- 01 · the point the count starts from -->
@@ -65,111 +66,110 @@
       <!-- 02 · the name -->
       <section class="sc s1" data-sc="1" aria-labelledby="s1-h">
         <h2 id="s1-h" class="sr-only">Отсчёт&nbsp;— телематика спецтехники</h2>
-        <p class="pin mono s1-l" data-p="s1l" aria-hidden="true">01&nbsp;— отсчёт</p>
+        <p class="pin mono s1-l" data-p="s1l" aria-hidden="true">точка отсчёта</p>
         <p class="pin mono s1-r" data-p="s1r" aria-hidden="true">моточасы · пробег · место · масло</p>
         <div class="pin s1-u" data-p="s1u" aria-hidden="true">
-          <p class="it"><span class="m"><span class="mi">телематика спецтехники</span></span></p>
+          <p class="big"><span class="m"><span class="mi">Телематика спецтехники</span></span></p>
           <p class="mono">из&nbsp;того, что уже стоит в&nbsp;машине</p>
         </div>
       </section>
 
-      <!-- 03 · four ways in -->
+      <!-- 03 · four ways in, one cabinet -->
       <section class="sc s2" data-sc="2" aria-labelledby="s2-h">
-        <h2 id="s2-h" class="pin it s2-h" data-p="s2h"><span class="m"><span class="mi">Четыре пути к&nbsp;данным.</span></span></h2>
-        <p class="pin mono s2-note" data-p="s2note">то, что уже стоит в&nbsp;машине · без нового оборудования</p>
-        <ol class="s2-rows">
-          <li class="pin" data-p="row0"><span class="mono idx">01</span><b>трекер</b><span class="mono sub">EGTS · Wialon IPS · Galileosky</span></li>
-          <li class="pin" data-p="row1"><span class="mono idx">02</span><b>платформа</b><span class="mono sub">АвтоГРАФ · Wialon · Traccar · ISO&nbsp;15143-3</span></li>
-          <li class="pin" data-p="row2"><span class="mono idx">03</span><b>телефон в&nbsp;кабине</b><span class="mono sub">код из&nbsp;6&nbsp;цифр · пишет и&nbsp;без сети</span></li>
-          <li class="pin" data-p="row3"><span class="mono idx">04</span><b>счётчик</b><span class="mono sub">фото показаний&nbsp;— эталон моточасов</span></li>
+        <div class="pin s2-h" data-p="s2h">
+          <h2 id="s2-h" class="head"><span class="m"><span class="mi">Четыре пути к&nbsp;данным.</span></span></h2>
+          <p class="lead s2-note">Сначала&nbsp;— то, что уже есть.</p>
+        </div>
+        <ol class="s2-list">
+          <li class="pin s2-src" data-p="src0"><b>трекер</b><span class="mono">EGTS · Wialon IPS · Galileosky</span></li>
+          <li class="pin s2-src" data-p="src1"><b>платформа</b><span class="mono">АвтоГРАФ · Wialon · Traccar · ISO&nbsp;15143-3</span></li>
+          <li class="pin s2-src" data-p="src2"><b>телефон<span class="s2-long"> в&nbsp;кабине</span></b><span class="mono">код из&nbsp;6&nbsp;цифр · копит данные без сети</span></li>
+          <li class="pin s2-src" data-p="src3"><b>счётчик</b><span class="mono">показание с&nbsp;панели и&nbsp;фото</span></li>
         </ol>
-        <p class="pin mono s2-b" data-p="s2b" aria-hidden="true">кабинет →</p>
+        <p class="pin mono s2-cab" data-p="s2cab" aria-hidden="true">кабинет</p>
         <p class="pin mono s2-off" data-p="s2off" aria-hidden="true">нет сети</p>
       </section>
 
       <!-- 04 · the readings -->
       <section class="sc s3" data-sc="3" aria-labelledby="s3-h">
         <h2 id="s3-h" class="sr-only">Моточасы, масло, местоположение и&nbsp;пробег&nbsp;— в&nbsp;одном кабинете</h2>
-        <p class="pin mono s3-form" data-p="s3form" aria-hidden="true">форма: <span data-s3-form>циферблат</span></p>
-        <p class="pin mono s3-data" data-p="s3data" aria-hidden="true">моточасы · из&nbsp;ЭБУ или по&nbsp;фото счётчика</p>
-        <p class="pin it s3-word" data-p="s3word" aria-hidden="true"><span class="m s3-stack"><span class="mi" data-w="a">моточасы</span><span class="mi" data-w="b">моточасы</span></span></p>
+        <div class="pin s3-g" data-p="s3word" aria-hidden="true">
+          <p class="s3-word"><span class="m s3-stack"><span class="mi" data-w="a">моточасы</span><span class="mi" data-w="b">моточасы</span></span></p>
+          <p class="lead s3-data">от&nbsp;трекера или с&nbsp;панели по&nbsp;фото счётчика</p>
+        </div>
       </section>
 
       <!-- 05 · any machine: the facet shell -->
       <section class="sc s4" data-sc="4" aria-labelledby="s4-h">
-        <h2 id="s4-h" class="pin it s4-h" data-p="s4h"><span class="m"><span class="mi">любая спецтехника</span></span></h2>
-        <p class="pin mono s4-list" data-p="s4list">экскаватор · харвестер · лесовоз · трактор</p>
-        <p class="pin mono s4-stats" data-p="s4stats" aria-hidden="true">граней <b data-facets>3&nbsp;200</b> · оболочка полая · объектив 38&nbsp;мм</p>
+        <h2 id="s4-h" class="pin head s4-h" data-p="s4h"><span class="m"><span class="mi">Любая<br />спецтехника</span></span></h2>
+        <ul class="s4-list" data-s4-list aria-label="Например">
+          <li><span class="m"><span class="s4-w">экскаватор</span></span></li>
+          <li><span class="m"><span class="s4-w">харвестер</span></span></li>
+          <li><span class="m"><span class="s4-w">лесовоз</span></span></li>
+          <li><span class="m"><span class="s4-w">трактор</span></span></li>
+        </ul>
       </section>
 
       <!-- 06 · no network -->
       <section class="sc s5" data-sc="5" aria-labelledby="s5-h">
-        <h2 id="s5-h" class="sr-only">Без связи точки копятся в&nbsp;памяти трекера или телефона и&nbsp;досылаются в&nbsp;зоне сети: 0 из&nbsp;5&nbsp;425 точек потеряно (модельный стенд)</h2>
+        <h2 id="s5-h" class="sr-only">Нет сети&nbsp;— данные ждут: трекер и&nbsp;телефон копят точки в&nbsp;памяти и&nbsp;досылают их, когда связь вернётся, пока есть место в&nbsp;памяти устройства</h2>
         <p class="pin mono s5-tag" data-p="s5tag" aria-hidden="true"><i></i><span data-s5-state>нет сети · в&nbsp;памяти</span> <b data-s5-n>0</b></p>
         <div class="pin s5-big" data-p="s5big" aria-hidden="true">
-          <p class="s5-num"><span class="m"><span class="mi">0 <small>из</small> 5&nbsp;425</span></span></p>
-          <p class="it"><span class="m"><span class="mi">точек потеряно на&nbsp;пути трекер → сервер</span></span></p>
-          <p class="mono">модельный стенд: реальные протоколы, моделируемые машины</p>
+          <p class="head"><span class="m"><span class="mi">Нет сети&nbsp;—<br />данные ждут.</span></span></p>
+          <p class="lead s5-sub">Трекер и&nbsp;телефон копят точки в&nbsp;памяти и&nbsp;досылают их, когда связь вернётся.</p>
+          <p class="mono s5-sub">схема · пока есть место в&nbsp;памяти устройства</p>
         </div>
       </section>
 
-      <!-- 07 · rhythm -->
+      <!-- 07 · on the air -->
       <section class="sc s6" data-sc="6" aria-labelledby="s6-h">
         <h2 id="s6-h" class="sr-only">Моточасы. Пробег. Местоположение. Масло. Любая техника&nbsp;— на&nbsp;связи.</h2>
       </section>
 
-      <!-- 08 · start -->
+      <!-- 08 · start: the next step -->
       <section class="sc s7" data-sc="7" aria-labelledby="s7-h">
         <h2 id="s7-h" class="sr-only">С&nbsp;чего начать</h2>
-        <p class="pin it s7-it" data-p="s7it"><span class="m"><span class="mi">телематика спецтехники</span></span></p>
+        <p class="pin s7-it" data-p="s7it"><span class="m"><span class="mi">телематика спецтехники</span></span></p>
         <div class="s7-ui">
-          <ol class="s7-steps">
-            <li data-rise>
-              <span class="mono n">01</span>
-              <h3>Откройте кабинет</h3>
-              <p>Вход по&nbsp;логину. Новый пользователь&nbsp;— по&nbsp;коду приглашения, первый запуск&nbsp;— ключом установки.</p>
-            </li>
-            <li data-rise>
-              <span class="mono n">02</span>
-              <h3>Подключите то, что есть</h3>
-              <ul class="chips">
-                <li><b>трекер</b> EGTS, Wialon IPS, Galileosky</li>
-                <li><b>платформа</b> АвтоГРАФ, Wialon, Traccar, ISO&nbsp;15143-3</li>
-                <li><b>телефон</b> код из&nbsp;6&nbsp;цифр</li>
-              </ul>
-            </li>
-            <li data-rise>
-              <span class="mono n">03</span>
-              <h3>Загрузите показания</h3>
-              <ul class="chips">
-                <li><b>счётчик</b> моточасы или одометр, км</li>
-                <li><b>фото счётчика</b> с&nbsp;камеры телефона</li>
-                <li><b>фото машины</b> PNG, JPEG, WebP</li>
-              </ul>
-            </li>
-          </ol>
-          <div class="s7-cta" data-rise>
-            <a class="btn" href="./app/">Открыть кабинет <span aria-hidden="true">→</span></a>
-            <a class="btn btn--ghost" href="./app/#/cab">Телефон в&nbsp;кабине</a>
+          <div class="s7-dl" data-rise role="group" aria-label="Приложения">
+            <a class="dl" data-dl="android" href="https://github.com/mikhailsilva/horisont/releases/download/native-0.3.3-2026.09.25/itles-android-debug.apk">
+              <svg class="dl__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="9.5" y="3" width="13" height="26" rx="3" /><path d="M14 25.5h4" /></svg>
+              <span class="dl__t"><b>Android</b><small>APK · 0.3.3 · тестовая</small></span>
+              <span class="dl__go" aria-hidden="true">↓</span>
+            </a>
+            <a class="dl" data-dl="windows" href="https://github.com/mikhailsilva/horisont/releases/download/native-0.3.3-2026.09.25/ITles-Windows-x64-0.3.3.zip">
+              <svg class="dl__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="24" height="16" rx="2" /><path d="M1.5 26.5h29" /></svg>
+              <span class="dl__t"><b>Windows</b><small>ZIP · 0.3.3 · Windows&nbsp;10/11</small></span>
+              <span class="dl__go" aria-hidden="true">↓</span>
+            </a>
+            <a class="dl" data-dl="ios" href="./app/">
+              <svg class="dl__ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="3" width="20" height="26" rx="3" /><circle cx="16" cy="25" r="1.2" /></svg>
+              <span class="dl__t"><b>iPhone и&nbsp;iPad</b><small>веб-приложение</small></span>
+              <span class="dl__go" aria-hidden="true">→</span>
+            </a>
           </div>
-          <ul class="s7-apps mono" data-rise aria-label="Приложения">
-            <li><a href="https://github.com/mikhailsilva/horisont/releases/download/native-0.3.3-2026.09.25/itles-android-debug.apk">Android · APK</a></li>
-            <li><a href="https://github.com/mikhailsilva/horisont/releases/download/native-0.3.3-2026.09.25/ITles-Windows-x64-0.3.3.zip">Windows · ZIP</a></li>
-            <li><a href="./app/">iPhone и&nbsp;iPad · веб</a></li>
-            <li><button type="button" data-open-details="downloads">как установить ↗</button></li>
-          </ul>
+          <p class="s7-note" data-rise>Сборки 0.3.3 пока называются ITles, Android-сборка тестовая; на&nbsp;устройствах их ещё не&nbsp;проверяли. <button type="button" data-open-details="downloads">Как установить</button></p>
+          <ol class="s7-steps" data-rise>
+            <li><span class="n">01</span><h3>Откройте кабинет</h3><p>Вход по&nbsp;логину, новичку&nbsp;— по&nbsp;коду приглашения.</p></li>
+            <li><span class="n">02</span><h3>Подключите то, что есть</h3><p>Трекер, платформу мониторинга или телефон в&nbsp;кабине.</p></li>
+            <li><span class="n">03</span><h3>Добавьте показания</h3><p>Моточасы или пробег с&nbsp;панели, фото&nbsp;— к&nbsp;ним.</p></li>
+          </ol>
+          <p class="s7-links" data-rise><a class="s7-cab" href="./app/">Открыть кабинет в&nbsp;браузере&nbsp;→</a><a href="./app/#/cab">Телефон в&nbsp;кабине</a></p>
         </div>
       </section>
+      </div>
 
       <div class="hud">
-        <i class="hud__c hud__c--tl"></i><i class="hud__c hud__c--tr"></i><i class="hud__c hud__c--bl"></i><i class="hud__c hud__c--br"></i>
-        <p class="hud__tl mono"><a href="./" data-restart aria-label="Отсчёт&nbsp;— к&nbsp;началу"><b>отсчёт</b></a><span>телематика&nbsp;— 2026</span></p>
-        <div class="hud__tr mono">
-          <p><b data-hud-scene>01&nbsp;— Точка</b></p>
-          <p class="hud__nav"><button type="button" data-open-details>подробности</button><a href="./app/">войти&nbsp;→</a></p>
-        </div>
-        <p class="hud__bl mono" aria-hidden="true"><b data-hud-tc>00:00:00:00</b><span data-hud-fps>60 к/с</span></p>
-        <p class="hud__br mono" aria-hidden="true"><span>темп 128</span><span class="hud__beat" data-hud-beat><i></i><i></i><i></i><i></i></span><span class="hud__hint" data-hud-hint>листайте ↓</span></p>
+        <p class="hud__tl"><a href="./" data-restart aria-label="Отсчёт&nbsp;— к&nbsp;началу"><svg class="hud__mark" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="hud-m"><rect width="64" height="64" fill="#fff" /><circle cx="40.4" cy="17.45" r="8.8" fill="#000" /></mask></defs><circle cx="32" cy="32" r="16.8" fill="none" stroke="currentColor" stroke-width="7.2" mask="url(#hud-m)" /><circle class="hud__dot" cx="40.4" cy="17.45" r="6.4" /></svg><b>отсчёт</b></a></p>
+        <p class="hud__tr mono"><button type="button" data-open-details>подробности</button><a href="./app/">войти&nbsp;→</a></p>
+        <p class="hud__where" aria-hidden="true"><b data-hud-n>01</b><span class="hud__of">/08</span><span class="hud__title" data-hud-title>Точка</span></p>
+        <button class="cue" type="button" data-cue aria-label="Следующая сцена">
+          <svg viewBox="-32 -32 64 64" aria-hidden="true">
+            <defs><mask id="cue-m"><rect x="-32" y="-32" width="64" height="64" fill="#fff" /><circle cx="8.4" cy="-14.55" r="9.6" fill="#000" /></mask></defs>
+            <g mask="url(#cue-m)"><g class="cue__ring"><path class="cue__t" d="M9.15 -14.09A16.8 16.8 0 0 1 14.09 -9.15" /><path class="cue__t" d="M14.97 -7.63A16.8 16.8 0 0 1 16.78 -0.88" /><path class="cue__t" d="M16.78 0.88A16.8 16.8 0 0 1 14.97 7.63" /><path class="cue__t" d="M14.09 9.15A16.8 16.8 0 0 1 9.15 14.09" /><path class="cue__t" d="M7.63 14.97A16.8 16.8 0 0 1 0.88 16.78" /><path class="cue__t" d="M-0.88 16.78A16.8 16.8 0 0 1 -7.63 14.97" /><path class="cue__t" d="M-9.15 14.09A16.8 16.8 0 0 1 -14.09 9.15" /><path class="cue__t" d="M-14.97 7.63A16.8 16.8 0 0 1 -16.78 0.88" /><path class="cue__t" d="M-16.78 -0.88A16.8 16.8 0 0 1 -14.97 -7.63" /><path class="cue__t" d="M-14.09 -9.15A16.8 16.8 0 0 1 -9.15 -14.09" /><path class="cue__t" d="M-7.63 -14.97A16.8 16.8 0 0 1 -0.88 -16.78" /><path class="cue__t" d="M0.88 -16.78A16.8 16.8 0 0 1 7.63 -14.97" /></g></g>
+            <g class="cue__dot"><circle cx="8.4" cy="-14.55" r="6.4" /></g>
+          </svg>
+        </button>
         <nav class="hud__bar" aria-label="Сцены"><span class="hud__fill" data-hud-fill></span><ol data-hud-chapters></ol></nav>
       </div>
       <p class="sr-only" aria-live="polite" data-live></p>
