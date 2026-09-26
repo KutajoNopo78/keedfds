@@ -100,9 +100,9 @@ export class Frame {
     this.p((x0 + x1) / 2, (y0 + y1) / 2, L + hw, hw, L, hw, dash, duty, c, a, 3, Math.atan2(dy, dx), 0, 0);
   }
   /** SDF morph between shapes a and b (0 dial, 1 drop, 2 pin, 3 counter window, 4 logo ring). */
-  morph(x: number, y: number, R: number, a: number, b: number, t: number, outline: number, c: Col, alpha = 1) {
+  morph(x: number, y: number, R: number, a: number, b: number, t: number, outline: number, c: Col, alpha = 1, rot = 0) {
     const e = R * 1.4 + outline + 2;
-    this.p(x, y, e, e, R, a + b * 16, t, outline, c, alpha, 4, 0, 0, 0);
+    this.p(x, y, e, e, R, a + b * 16, t, outline, c, alpha, 4, rot, 0, 0);
   }
   /**
    * Glyph with its pen at (px, py) on the baseline; k = CSS px per raster px. Horizontal scale about the glyph

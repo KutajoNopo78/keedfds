@@ -2,7 +2,7 @@ import './reel.css';
 import { Atlas, type Glyph, type Word } from './reel/atlas';
 import { Overlay } from './reel/dom';
 import { Frame, Renderer, type Build } from './reel/gl/renderer';
-import { Navigator, bindInput } from './reel/nav';
+import { Navigator, Pull, bindInput } from './reel/nav';
 import { WORDS, draw, layout, setCoverU, setQuality, setType } from './reel/scenes';
 import { HOLDS } from './reel/time';
 
@@ -97,15 +97,15 @@ function start() {
   const jobs: Array<() => void> = [];
   for (let i = 0; i < 6; i++) jobs.push(() => (type.wm[i] = atlas.wordmarkLetter(type.wmScale, i)));
   for (const w of WORDS) {
-    const font = w.cond ? "800 128px 'Martian Mono'" : "800 128px 'Unbounded'", stretch = w.cond ? 'condensed' : 'normal';
+    // one instrument voice for the kinetic type: Martian Mono at its widest, condensed only for the longest word
+    const font = "800 128px 'Martian Mono'", stretch: CanvasFontStretch = w.cond ? 'condensed' : 'semi-expanded';
     for (const ch of new Set(Array.from(w.word.replace(/\s/g, '')))) jobs.push(() => atlas.char(font, ch, stretch));
     jobs.push(() => (type.words[w.word] = atlas.word(font, w.word, stretch)));
   }
   let fontsIn = false;
   Promise.all([
-    document.fonts.load("800 128px 'Unbounded'", 'МОТОЧАСЫ'),
-    document.fonts.load("800 128px 'Martian Mono'", 'МЕСТОПОЛОЖЕНИЕ'),
-    document.fonts.load("italic 400 32px 'Noto Serif Display'", 'телематика'),
+    document.fonts.load("800 128px 'Martian Mono'", 'МОТОЧАСЫ МЕСТОПОЛОЖЕНИЕ'),
+    document.fonts.load("800 32px 'Onest'", 'Четыре пути'),
     document.fonts.load("500 12px 'Martian Mono'"),
   ])
     .catch(() => undefined)
@@ -113,6 +113,7 @@ function start() {
 
   const F = new Frame();
   const dom = new Overlay(reduced);
+  const pull = new Pull();
   const s0 = $('.s0')!;
   let atlasUp = false, buildUp = false, warmed = false, film = false;
   let nav: Navigator | null = null;
@@ -146,7 +147,7 @@ function start() {
     R.render(F);
     const t2 = debug ? performance.now() : 0;
     dom.setHudDark(0.2126 * F.base[0] + 0.7152 * F.base[1] + 0.0722 * F.base[2]);
-    dom.update(T, now, dt, nav ? nav.K : 0);
+    dom.update(T, now, nav, pull);
     if (debug) {
       const t3 = performance.now();
       if (t3 - t0 > 8) slow.push({ T: +T.toFixed(3), draw: +(t1 - t0).toFixed(1), gl: +(t2 - t1).toFixed(1), dom: +(t3 - t2).toFixed(1) });
@@ -200,7 +201,8 @@ function start() {
         layout(innerWidth, innerHeight);
         R.resize(innerWidth, innerHeight, pr);
         // real frames from every scene, so each pipeline state is built before it first appears
-        for (const T of [2.05, 4.6, 6.9, 9.5, 12.6, 14.6, 15.4, 16.3]) {
+        const H = HOLDS;
+        for (const T of [2.05, H[1] + 1.9, H[2] + 3.0, H[3] + 1.3, H[4] + 1.8, H[5] + 0.5, H[5] + 1.9, H[6] + 1.2]) {
           F.reset();
           draw(F, T, now);
           R.warm(F);
@@ -222,8 +224,18 @@ function start() {
         dom.takeover(now);
         nav = new Navigator(HOLDS[0], 0, reduced);
         nav.onTarget = (k) => dom.announce(k);
+        nav.onHeld = () => pull.refuse();
         dom.onChapter = (k) => nav!.goTo(k);
-        bindInput($('#reel')!, go, () => detailsOpen() || !!manual);
+        dom.onCue = () => {
+          pull.push(1, 0.4);
+          go(1);
+        };
+        bindInput($('#reel')!, {
+          go,
+          push: (d, m) => pull.push(d, m),
+          drag: (dy) => (pull.drag = dy),
+          blocked: () => detailsOpen() || !!manual,
+        });
         $('[data-restart]')?.addEventListener('click', (e) => {
           e.preventDefault();
           nav!.goTo(1);
@@ -241,6 +253,7 @@ function start() {
       n.update(dt);
       T = n.T;
     }
+    pull.update(dt, manual ? null : n, reduced);
     render(T, manual ? manual.now : now, dt);
     if (debug) {
       cpu.push(performance.now() - nowMs);
@@ -280,7 +293,8 @@ function start() {
           render(T, now, 0);
         },
         free: () => (manual = null),
-        state: () => ({ film, T: nav?.T, K: nav?.K, rate: nav?.rate, res, q, linked: R.linked, atlasUp, buildUp }),
+        state: () => ({ film, T: nav?.T, K: nav?.K, rate: nav?.rate, gate: nav?.gate, pending: nav?.pending, lift: pull.x, res, q, linked: R.linked, atlasUp, buildUp }),
+        holds: () => HOLDS.slice(),
         frames: () => {
           const s = frames.slice().sort((a, b) => a - b);
           const c = cpu.slice().sort((a, b) => a - b);
