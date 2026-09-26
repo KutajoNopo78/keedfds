@@ -287,15 +287,17 @@ uniform float uFlyDur;
 uniform float uGone;
 uniform vec3 uGoneTo;
 uniform float uSize;
-out vec3 vN;
-out vec3 vS;
-out vec3 vW;
+uniform vec3 uPaper;
 out vec3 vBary;
+// Smooth values keep the dithered fade stable at its edge.
 out float vFade;
 out float vSeed;
-out float vFly;
-out float vBias;
+flat out vec3 vColor;
+flat out vec3 vEdgeColor;
 ${NOISE}
+${LIGHT}
+${FILM}
+vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
 mat3 axisAngle(vec3 ax, float a) {
   float s = sin(a), c = cos(a), ic = 1.0 - c;
   return mat3(c + ax.x * ax.x * ic, ax.y * ax.x * ic + ax.z * s, ax.z * ax.x * ic - ax.y * s,
@@ -348,57 +350,47 @@ void main() {
   mat3 R = swing * RA * frame(aNA) * twist * lean * tumble * pre0;
   float s = uSize * appear * (1.0 + 0.22 * sin(3.14159 * f)) * (1.0 - g);
   vec3 w = pos + R * (aPos * s);
-  vN = R * aNormal;
-  vS = swing * NA;
-  vW = w;
   vBary = aBary;
   vFade = appear * (1.0 - g);
   vSeed = aSeed.w;
-  vFly = sin(3.14159 * f);
-  vBias = aOrder.z * fe;
-  gl_Position = uViewProj * vec4(w, 1.0);
-}`;
-
-export const PART_FS = /* glsl */ `#version 300 es
-precision highp float;
-in vec3 vN;
-in vec3 vS;
-in vec3 vW;
-in vec3 vBary;
-in float vFade;
-in float vSeed;
-in float vFly;
-in float vBias;
-uniform float uTime;
-uniform vec3 uPaper;
-out vec4 o;
-${LIGHT}
-${NOISE}
-${FILM}
-vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
-void main() {
-  if (vFade < 0.999 && vFade < hash12(gl_FragCoord.xy + vSeed * 97.0)) discard;
-  vec3 N = normalize(vN);
-  vec3 V = normalize(uCam - vW);
+  vec3 vS = swing * NA;
+  vec3 N = normalize(R * aNormal);
+  vec3 V = normalize(uCam - w);
   if (dot(N, V) < 0.0) N = -N;
   float cosT = clamp(dot(N, V), 0.0, 1.0);
-  float d = 192.0 + 62.0 * sin(dot(vW, vec3(0.8, 0.45, -0.4)) * 0.95 - uTime * 0.2);
-  d += 30.0 * (vnoise(vW * 1.2 + vec3(0.0, uTime * 0.04, 0.0)) - 0.5) + vSeed * 12.0 + vBias;
+  float d = 192.0 + 62.0 * sin(dot(w, vec3(0.8, 0.45, -0.4)) * 0.95 - uTime * 0.2);
+  d += 30.0 * (vnoise(w * 1.2 + vec3(0.0, uTime * 0.04, 0.0)) - 0.5) + vSeed * 12.0 + aOrder.z * fe;
   vec3 film = thinFilm(cosT, d);
   vec3 H = normalize(uKeyDir + V);
   float diff = max(dot(N, uKeyDir), 0.0);
   float spec = pow(max(dot(N, H), 0.0), 64.0);
   float fres = 0.06 + 0.94 * pow(1.0 - cosT, 4.0);
-  // the near skin is lit; the far skin, seen through the gaps, sinks into shadow
   float shell = mix(0.26, 1.0, smoothstep(-0.35, 0.3, dot(normalize(vS), V)));
   vec3 col = vec3(0.012, 0.011, 0.009) + film * (0.1 + 0.7 * diff + 1.05 * fres) * shell;
-  col += spec * (1.4 + 0.9 * vFly) * mix(vec3(1.0), film * 1.5, 0.5) * shell;
+  col += spec * (1.4 + 0.9 * sin(3.14159 * f)) * mix(vec3(1.0), film * 1.5, 0.5) * shell;
   col += env(reflect(-V, N)) * film * fres * 0.45 * shell;
+  vec3 withEdge = col + (0.06 + 1.2 * spec + 0.35 * fres + 0.12 * diff) * mix(uPaper, film, 0.6) * shell;
+  // Pre-tone both edge endpoints; the fragment stage only evaluates the barycentric mask.
+  vColor = pow(aces(col * 1.1), vec3(1.0 / 2.2));
+  vEdgeColor = pow(aces(withEdge * 1.1), vec3(1.0 / 2.2));
+  gl_Position = uViewProj * vec4(w, 1.0);
+}`;
+
+export const PART_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec3 vBary;
+in float vFade;
+in float vSeed;
+flat in vec3 vColor;
+flat in vec3 vEdgeColor;
+out vec4 o;
+float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+void main() {
+  if (vFade < 0.999 && vFade < hash12(gl_FragCoord.xy + vSeed * 97.0)) discard;
   float e = min(min(vBary.x, vBary.y), vBary.z);
   float w = fwidth(e);
   float edge = 1.0 - smoothstep(w * 0.5, w * 1.5 + 0.022, e);
-  col += edge * (0.06 + 1.2 * spec + 0.35 * fres + 0.12 * diff) * mix(uPaper, film, 0.6) * shell;
-  o = vec4(pow(aces(col * 1.1), vec3(1.0 / 2.2)), 1.0);
+  o = vec4(mix(vColor, vEdgeColor, edge), 1.0);
 }`;
 
 /** The map: a perspective grid of points; dead zone flickers, the flush wave runs out from the mast. */
@@ -432,7 +424,8 @@ void main() {
   a = mix(a, 0.85, route);
   vec3 col = uPaper;
   if (uWave > 0.0) {
-    float w = exp(-pow((dm - uWave) * 2.4, 2.0)) * (1.0 - smoothstep(9.0, 13.0, uWave));
+    float wv = (dm - uWave) * 2.4;
+    float w = exp(-wv * wv) * (1.0 - smoothstep(9.0, 13.0, uWave));
     col = mix(col, uSignal, w);
     a = max(a, w);
   }
